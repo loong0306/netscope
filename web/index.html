@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="在本机观测真实网络连接、流量、数据包与路由。">
+  <title>NetScope · 本机网络观测</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/controls/OrbitControls.js":"/vendor/OrbitControls.js"}}</script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+<aside class="rail" aria-label="主导航">
+  <a class="brand-mark" href="/" aria-label="NetScope 首页"><svg viewBox="0 0 32 32"><path d="M6 24V8l10 16V8M22 8h4v16h-4"/></svg></a>
+  <button class="rail-button active" id="nav-topology" title="实时拓扑" aria-label="实时拓扑"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="5" r="2"/><circle cx="20" cy="5" r="2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="19" r="2"/><path d="m6 7 4 3m4 0 4-3m-4 7 4 3m-8-3-4 3"/></svg></button>
+  <button class="rail-button" id="nav-packets" title="数据包" aria-label="数据包"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg></button>
+  <button class="rail-button" id="nav-route" title="链路探测" aria-label="链路探测"><svg viewBox="0 0 24 24"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M5 7v7a5 5 0 0 0 5 5h7M7 5h7a5 5 0 0 1 0 10h-4"/></svg></button>
+  <div class="rail-bottom"><button class="rail-button" id="about-btn" title="数据来源与使用说明" aria-label="数据来源与使用说明"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></button><span class="tiny-dot"></span><span class="rail-local">LOCAL</span></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><div class="wordmark">NetScope<span class="wordmark-divider"></span><span class="wordmark-sub">网络观测台</span></div><div class="header-right"><span class="local-badge"><span class="tiny-dot"></span>仅本机</span><span class="version">v1.0</span></div></header>
+  <main>
+    <section class="page-heading"><div><div class="eyebrow">YOUR NETWORK, IN SIGHT.</div><h1>看见每一次连接<span class="title-dot">.</span></h1><p>此刻，设备正与世界如何通信。</p></div><div class="heading-actions"><button id="pause-btn" class="button secondary"><span id="pause-icon">Ⅱ</span><span id="pause-text">暂停显示</span></button></div></section>
+    <div id="source-warning" class="source-warning" hidden></div>
+    <section class="metrics" aria-label="实时网络指标">
+      <article class="metric"><div class="metric-top"><span>接收速率</span><span class="metric-icon cyan">↙</span></div><div class="metric-value cyan" id="rx-rate">—</div><div class="metric-bottom"><span id="metric-interface">等待网卡数据</span><canvas id="rx-chart" width="160" height="30" aria-label="接收速率趋势"></canvas></div></article>
+      <article class="metric"><div class="metric-top"><span>发送速率</span><span class="metric-icon lime">↗</span></div><div class="metric-value lime" id="tx-rate">—</div><div class="metric-bottom"><span>网卡实际字节增量</span><canvas id="tx-chart" width="160" height="30" aria-label="发送速率趋势"></canvas></div></article>
+      <article class="metric"><div class="metric-top"><span>活动连接</span><span class="metric-icon neutral">⌘</span></div><div class="metric-value" id="connection-count">—</div><div class="metric-bottom"><span id="peer-count">等待系统采样</span><span class="metric-tag">SOCKETS</span></div></article>
+      <article class="metric"><div class="metric-top"><span>观测数据包</span><span class="metric-icon neutral">◈</span></div><div class="metric-value" id="packet-count">—</div><div class="metric-bottom"><span id="packet-caption">尚未开启抓包</span><span class="metric-tag" id="capture-tag">PCAP</span></div></article>
+    </section>
+    <section class="observatory panel">
+      <div class="panel-heading"><div class="section-title"><span class="live-dot" id="live-dot"></span><h2>实时网络拓扑</h2><span id="live-status" class="status-text">正在连接</span></div><div class="graph-tools"><label class="select-wrap"><span>网卡</span><select id="interface-select" aria-label="选择统计网卡"><option value="auto">自动 · 默认出口</option></select></label><button class="icon-button" id="reset-view" title="重置视角" aria-label="重置视角"><svg viewBox="0 0 20 20"><path d="M3 8a7 7 0 1 1 1 7M3 3v5h5"/></svg></button><button class="icon-button" id="fullscreen-btn" title="展开拓扑" aria-label="展开拓扑"><svg viewBox="0 0 20 20"><path d="M3 7V3h4m6 0h4v4M3 13v4h4m6 0h4v-4"/></svg></button></div></div>
+      <div class="observatory-body">
+        <aside class="peer-sidebar"><div class="sidebar-title"><span>远端设备</span><span class="count-badge" id="visible-peers">0</span></div><label class="search-box"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg><input id="search" type="search" placeholder="搜索 IP、进程或端口" autocomplete="off" aria-label="搜索 IP、进程或端口"></label><div class="protocol-filters" id="protocol-filters"><button class="filter-chip active" data-protocol="ALL">全部</button><button class="filter-chip" data-protocol="TCP">TCP</button><button class="filter-chip" data-protocol="UDP">UDP</button><button class="filter-chip" data-protocol="ICMP">ICMP</button></div><div class="peer-list" id="peer-list"><div class="empty-small">正在读取真实连接…</div></div><label class="loopback-toggle"><input type="checkbox" id="show-loopback">显示本机回环连接</label></aside>
+        <div class="graph-area" id="graph-area"><div id="topology" role="img" aria-label="可旋转、缩放并点击 IP 节点的真实网络连接拓扑"></div><div id="graph-labels" class="graph-labels"></div><div class="graph-corner"><span class="graph-cross">＋</span><span id="host-label">本机设备</span><span class="graph-coordinate" id="host-ip">采样中</span></div><div id="graph-empty" class="graph-empty" hidden>当前筛选条件下没有连接</div><div class="graph-bottom"><span><i class="legend-dot tcp"></i>TCP<i class="legend-dot udp"></i>UDP<i class="legend-dot icmp"></i>ICMP / 其他</span><span class="graph-hint">拖动旋转 · 滚轮缩放</span></div><div class="graph-watermark">LIVE TOPOLOGY<span>逻辑连接 · 非物理路径</span></div></div>
+        <aside class="inspector" id="inspector"><div class="sidebar-title">连接洞察 <span class="mono muted">01 / LIVE</span></div><div id="peer-detail"><div class="inspector-placeholder"><span class="target-glyph">◎</span><h3>选择一个连接</h3><p>点击拓扑节点或左侧 IP，<br>查看真实传输详情。</p></div></div><div class="capture-card"><div class="capture-card-title"><span class="tiny-dot amber" id="capture-dot"></span><strong id="capture-title">深入到每一个包</strong></div><p id="capture-message">开启本机抓包，查看包头、传输方向和原始字节。</p><button class="button primary capture-action" id="capture-btn">开启数据包采集 <span>↗</span></button><button class="text-button" id="authorize-btn" hidden>系统授权抓包</button><label class="capture-all"><input type="checkbox" id="capture-all">抓取所有接口（可能重复）</label></div></aside>
+      </div>
+      <div class="graph-footer"><span><span class="tiny-dot"></span><span id="source-label">数据来自本机系统采集服务</span></span><span id="sample-time">等待首个样本</span></div>
+    </section>
+    <section class="traffic panel" id="traffic-panel"><div class="panel-heading traffic-heading"><div class="table-tabs" role="tablist"><button class="table-tab active" data-tab="connections" role="tab" aria-selected="true">网络连接 <span id="tab-flow-count">0</span></button><button class="table-tab" data-tab="packets" role="tab" aria-selected="false">数据包 <span id="tab-packet-count">0</span></button><button class="table-tab" data-tab="processes" role="tab" aria-selected="false">进程流量</button></div><span class="table-caption" id="table-caption">按当前接收与发送速率排序</span></div><div class="table-scroll" id="table-content"></div><div class="table-footer"><span id="table-count">等待数据</span><span>每 2 秒系统采样 · 每 1 秒刷新</span></div></section>
+    <footer class="page-footer"><span><span class="mini-logo">N</span>NetScope <span class="footer-divider">/</span> 本机网络，清晰可见。</span><span>数据留在此设备 <span class="tiny-dot"></span><span id="footer-clock"></span></span></footer>
+  </main>
+</div>
+<dialog id="detail-dialog"><div class="dialog-header"><div><div class="eyebrow" id="dialog-eyebrow">PACKET INSPECTOR</div><h2 id="dialog-title">数据包详情</h2></div><button class="icon-button" id="dialog-close" aria-label="关闭详情">✕</button></div><div id="dialog-content"></div></dialog>
+<div id="toast" role="status" hidden></div>
+</body>
+</html>

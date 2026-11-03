@@ -1,0 +1,1 @@
+"""Local-only network observatory."""

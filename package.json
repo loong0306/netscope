@@ -1,0 +1,15 @@
+{
+  "name": "netscope-local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "本机真实网络传输的 Three.js 实时观测台",
+  "scripts": {
+    "start": "PYTHONPYCACHEPREFIX=.runtime/pycache python3 -m netshow",
+    "test": "PYTHONPYCACHEPREFIX=.runtime/pycache python3 -m unittest discover -s tests -v && node --test tests/frontend.test.mjs",
+    "check": "node --check web/app.js && node --check web/topology.js && node --check web/format.js && PYTHONPYCACHEPREFIX=.runtime/pycache python3 -m compileall -q netshow",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": { "three": "0.187.0" },
+  "devDependencies": { "playwright": "1.64.1" }
+}
