@@ -2,6 +2,8 @@
 
 用 Three.js 观测当前 Mac 的真实网络传输。Python 服务调用本机系统工具，页面和数据都留在本机，不连接云端，不生成演示流量。
 
+![NetScope 桌面界面](assets/desktop.png)
+
 ## 启动
 
 需要 macOS、Python 3.9+、Node.js 20+。首次运行：
